@@ -37,7 +37,7 @@ $$ Knowledge~after  = Knowledge~before * updating~factor$$ $$ Posterior~distribu
 
 You may have heard multiple times about Bayesian Hierarchical Framework or Bayesian Hierarchical Modelling. This simply means that our model is compound by multiple levels differing in hierarchy. Actually, they are usually also referred as multi-level models (Hooten & Hefley, 2019). There are two relevant concepts here to derive the posterior distributions:
 
-1.  **Hyper-parameters** are the parameters of the prior distribution. For example, if we have $ Y|\mu \sim N(\mu, \sigma^2)$, with $\mu = \beta_1 *X$ as the "top-level" parameter describing the process model, where $\beta_1$ is the hyper-parameter.
+1.  **Hyper-parameters** are the parameters of the prior distribution. For example, if we have \$ Y\|\mu \sim N(\mu, \sigma\^2)\$, with $\mu = \beta_1 *X$ as the "top-level" parameter describing the process model, where $\beta_1$ is the hyper-parameter.
 
 2.  **Hyper-priors** are the distributions of the hyper-parameters. For example, $\beta_1 \sim N(\beta_0, \sigma^2_{\beta_0})$ is the hyper-prior of $\beta_1$
 
@@ -47,7 +47,7 @@ Layer 1: $$ y_i|\mu_i, \beta_1 \sim P(y_i|\mu_i, \beta_0)$$
 
 Layer 2: $$ \mu_i| \beta_1 \sim P(\mu_i|\beta_1)$$
 
-Layer 3: $$ \beta_1 \sim P(\beta_1)$$ 
+Layer 3: $$ \beta_1 \sim P(\beta_1)$$
 
 ### Posterior distribution
 
@@ -58,6 +58,7 @@ In practice, however, we never know this specific function. So what we do is to 
 ## Let's run an example
 
 ### Libraries
+
 ```{r, warning=FALSE, message=FALSE, echo=TRUE}
 library(easypackages)
 packages("dplyr", "tidyr", "purrr", "tibble")
@@ -65,6 +66,14 @@ packages("readxl", "stringr")
 packages("ggplot2")
 packages("nlme", "car", "emmeans", "multcomp", "multcompView")
 packages("brms", "tidybayes", "performance")
+
+library(brms)
+library(nlme)
+library(lme4)
+library(car)
+library(emmeans)
+library(multcomp)
+library(multcompView)
 
 # Data
 # Corn yield response to N rates somewhere in KS
@@ -74,12 +83,13 @@ data <- read_excel("data/cropyield.xlsx") %>%
 ```
 
 ### 01. Frequentist with lme
+
 ```{r  warning=F, message=F}
 # Analisis, no intercept (0 + ...)
 yield_lme <- data %>% 
   group_by(PHASE) %>% nest() %>% 
   mutate(model = map(data,
-                     ~lme(GY_bu ~ 0 + as.factor(TREAT), 
+                     ~nlme::lme(GY_bu ~ 0 + as.factor(TREAT), 
                           random = ~1|BLOCK, data=.)))
 
 # Extract the model
@@ -93,6 +103,7 @@ Anova(corn_lme, type = 3)
 ```
 
 #### Multiple comparison
+
 ```{r  warning=F, message=F}
 # Multiple comparison
 corn_lme_mc<-emmeans(corn_lme, ~ TREAT)
@@ -104,9 +115,10 @@ corn_lme_means <- as.data.frame(
 corn_lme_means
 ```
 
-
 ### 02. Bayesian with brms
+
 #### i. MCMC pars
+
 ```{r  warning=F, message=F}
 # Set up pars
 WU = 1000
@@ -117,6 +129,7 @@ AD = 0.99
 ```
 
 #### ii. Fit
+
 ```{r  warning=F, message=F}
 
 # Analysis
@@ -147,6 +160,7 @@ corn_brms <- data %>%
 ```
 
 #### iii. Check the model
+
 ```{r  warning=F, message=F}
 # Plot
 plot(corn_brms$model[[1]]) 
@@ -158,6 +172,7 @@ pp_check(corn_brms$model[[1]], nsamples = 200)
 ```
 
 #### iv. Model summary
+
 ```{r  warning=F, message=F}
 # Summary
 summary(corn_brms$model[[1]])
@@ -167,6 +182,7 @@ performance::performance(corn_brms$model[[1]])
 ```
 
 #### v. Extract posteriors
+
 ```{r warning=F, message=F}
 
 # Pass model draws to a dataframe
